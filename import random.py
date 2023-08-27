@@ -2,185 +2,93 @@ import random
 import time
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import pandas as pd
+import numpy as np
 
-# NOTE: Python version >=3.3 is required, due to "yield from" feature.
-
-def swap(A, i, j):
-    """Helper function to swap elements i and j of list A."""
-
+def intercambiar(A, i, j):
+    """Función auxiliar para intercambiar los elementos i y j de la lista A."""
     if i != j:
         A[i], A[j] = A[j], A[i]
 
-def bubblesort(A):
-    """In-place bubble sort."""
-
-    if len(A) == 1:
-        return
-
-    swapped = True
-    for i in range(len(A) - 1):
-        if not swapped:
-            break
-        swapped = False
-        for j in range(len(A) - 1 - i):
-            if A[j] > A[j + 1]:
-                swap(A, j, j + 1)
-                swapped = True
-            yield A
-
-def insertionsort(A):
-    """In-place insertion sort."""
-
+def orden_insercion(A):
+    """Ordenamiento por inserción: ordenar A de menor a mayor"""
     for i in range(1, len(A)):
         j = i
         while j > 0 and A[j] < A[j - 1]:
-            swap(A, j, j - 1)
+            intercambiar(A, j, j - 1)
             j -= 1
             yield A
 
-def mergesort(A, start, end):
-    """Merge sort."""
-
-    if end <= start:
-        return
-
-    mid = start + ((end - start + 1) // 2) - 1
-    yield from mergesort(A, start, mid)
-    yield from mergesort(A, mid + 1, end)
-    yield from merge(A, start, mid, end)
-    yield A
-
-def merge(A, start, mid, end):
-    """Helper function for merge sort."""
-    
-    merged = []
-    leftIdx = start
-    rightIdx = mid + 1
-
-    while leftIdx <= mid and rightIdx <= end:
-        if A[leftIdx] < A[rightIdx]:
-            merged.append(A[leftIdx])
-            leftIdx += 1
-        else:
-            merged.append(A[rightIdx])
-            rightIdx += 1
-
-    while leftIdx <= mid:
-        merged.append(A[leftIdx])
-        leftIdx += 1
-
-    while rightIdx <= end:
-        merged.append(A[rightIdx])
-        rightIdx += 1
-
-    for i, sorted_val in enumerate(merged):
-        A[start + i] = sorted_val
-        yield A
-
-def quicksort(A, start, end):
-    """In-place quicksort."""
-
-    if start >= end:
-        return
-
-    pivot = A[end]
-    pivotIdx = start
-
-    for i in range(start, end):
-        if A[i] < pivot:
-            swap(A, i, pivotIdx)
-            pivotIdx += 1
-        yield A
-    swap(A, end, pivotIdx)
-    yield A
-
-    yield from quicksort(A, start, pivotIdx - 1)
-    yield from quicksort(A, pivotIdx + 1, end)
-
-def selectionsort(A):
-    """In-place selection sort."""
-    if len(A) == 1:
-        return
-
-    for i in range(len(A)):
-        # Find minimum unsorted value.
-        minVal = A[i]
-        minIdx = i
-        for j in range(i, len(A)):
-            if A[j] < minVal:
-                minVal = A[j]
-                minIdx = j
-            yield A
-        swap(A, i, minIdx)
-        yield A
-
-if __name__ == "__main__":
-    # Get user input to determine range of integers (1 to N) and desired
-    # sorting method (algorithm).
-    N = int(input("Enter number of integers: "))
-    method_msg = "Enter sorting method:\n(b)ubble\n(i)nsertion\n(m)erge \
-        \n(q)uick\n(s)election\n"
-    method = input(method_msg)
-
-    # Build and randomly shuffle list of integers.
-    A = [x + 1 for x in range(N)]
-    random.seed(time.time())
-    random.shuffle(A)
-
-    # Get appropriate generator to supply to matplotlib FuncAnimation method.
-    if method == "b":
-        title = "Bubble sort"
-        generator = bubblesort(A)
-    elif method == "i":
-        title = "Insertion sort"
-        generator = insertionsort(A)
-    elif method == "m":
-        title = "Merge sort"
-        generator = mergesort(A, 0, N - 1)
-    elif method == "q":
-        title = "Quicksort"
-        generator = quicksort(A, 0, N - 1)
-    else:
-        title = "Selection sort"
-        generator = selectionsort(A)
-
-    # Initialize figure and axis.
+def grafico(A, N, titulo, generador):
+    # Inicializar figura y ejes.
     fig, ax = plt.subplots()
-    ax.set_title(title)
+    ax.set_title(titulo)
 
-    # Initialize a bar plot. Note that matplotlib.pyplot.bar() returns a
-    # list of rectangles (with each bar in the bar plot corresponding
-    # to one rectangle), which we store in bar_rects.
+    # Inicializar un gráfico de barras. Los valores de las barras se actualizarán en cada iteración de la animación.
     bar_rects = ax.bar(range(len(A)), A, align="edge")
 
-    # Set axis limits. Set y axis upper limit high enough that the tops of
-    # the bars won't overlap with the text label.
+    # Establecer límites de los ejes.
     ax.set_xlim(0, N)
-    ax.set_ylim(0, int(1.07 * N))
+    ax.set_ylim(0, float(max(A)) * 1.1)
 
-    # Place a text label in the upper-left corner of the plot to display
-    # number of operations performed by the sorting algorithm (each "yield"
-    # is treated as 1 operation).
-    text = ax.text(0.02, 0.95, "", transform=ax.transAxes)
+    # Colocar una etiqueta de texto en la esquina superior izquierda del gráfico para mostrar
+    # el número de operaciones realizadas por el algoritmo de ordenamiento (cada "yield" se
+    # trata como 1 operación).
+    texto = ax.text(0.02, 0.95, "", transform=ax.transAxes)
 
-    # Define function update_fig() for use with matplotlib.pyplot.FuncAnimation().
-    # To track the number of operations, i.e., iterations through which the
-    # animation has gone, define a variable "iteration". This variable will
-    # be passed to update_fig() to update the text label, and will also be
-    # incremented in update_fig(). For this increment to be reflected outside
-    # the function, we make "iteration" a list of 1 element, since lists (and
-    # other mutable objects) are passed by reference (but an integer would be
-    # passed by value).
-    # NOTE: Alternatively, iteration could be re-declared within update_fig()
-    # with the "global" keyword (or "nonlocal" keyword).
-    iteration = [0]
-    def update_fig(A, rects, iteration):
+    iteracion = [0]
+    def update_fig(A, rects, iteracion):
         for rect, val in zip(rects, A):
             rect.set_height(val)
-        iteration[0] += 1
-        text.set_text("# of operations: {}".format(iteration[0]))
+        iteracion[0] += 1
+        texto.set_text("Número de operaciones: {}".format(iteracion[0]))
 
-    anim = animation.FuncAnimation(fig, func=update_fig,
-        fargs=(bar_rects, iteration), frames=generator, interval=1,
+    animacion = animation.FuncAnimation(fig, func=update_fig,
+        fargs=(bar_rects, iteracion), frames=generador, interval=1,
         repeat=False)
     plt.show()
+
+def extraer_array():
+    data2 = pd.read_csv("C:/Users/andre/Downloads/IPLogger-output.csv", sep='\t', skiprows=1)
+    ips_arr = data2['Ip'].tolist()
+    
+    ips_without_dots_arr = []
+
+    for ip in ips_arr:
+      ip_without_dots = ip.replace('.', '') # Elimina los puntos de las ip
+      ips_without_dots_arr.append(ip_without_dots)
+
+      ip_without_dots_to_int = np.array(ips_without_dots_arr).astype(float)
+      ip_without_dots_to_int_to_list = ip_without_dots_to_int.tolist()
+    return ip_without_dots_to_int_to_list
+
+if __name__ == "__main__":
+    # Obtener la entrada del usuario para determinar el rango de enteros (1 a N)
+
+    mensaje_metodo = "Seleccione una opción: \n(1) Ordenar array aleatorio \n(2) Organizar array desde archivo \n"
+    metodo = input(mensaje_metodo)
+
+    if metodo == "1":
+        titulo = "Array aleatorio"
+        N = int(input("Ingrese el número de enteros: "))
+        A = [x + 1 for x in range(N)]
+        random.seed(time.time())
+        random.shuffle(A)
+        titulo = "Ordenamiento por inserción"
+        generador = orden_insercion(A)
+
+        grafico(A, N, titulo, generador)
+
+    elif metodo == "2":
+        titulo = "Array desde archivo"
+        A = extraer_array()
+        N = len(A)
+        titulo = "Ordenamiento por inserción"
+        generador = orden_insercion(A)
+        print(A)
+        grafico(A, N, titulo, generador)
+        
+
+    else:
+        print("Opción no válida")
+        exit()

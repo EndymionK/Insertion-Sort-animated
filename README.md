@@ -6,4 +6,4 @@
 
 *Un flashcard con información rapida:
 
-<span>![</span><span>FlashCard</span><span>]</span><span>(</span><span>https://github.com/EndymionK/Insertion-Sort-animated/blob/main/imagen_2023-08-27_223620470.png</span><span>)</span>
+![FlashCard](https://github.com/EndymionK/Insertion-Sort-animated/blob/main/imagen_2023-08-27_223620470.png)
